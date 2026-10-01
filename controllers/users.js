@@ -8,15 +8,13 @@ const getUsers = (req, res) => {
 
 const getUserById = (req, res) => {
   User.findById(req.params.userId)
-    .orFail(() => {
-      const documentNotFoundError = new Error('ID do usuário não encontrado');
-      documentNotFoundError.name = 'documentNotFoundError';
-      throw documentNotFoundError;
-    })
+    .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err.name === 'documentNotFoundError') {
-        res.status(404).send({ message: err.message });
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'ID do usuário inválido' });
+      } else if (err.name === 'DocumentNotFoundError') {
+        res.status(404).send({ message: 'ID do usuário não encontrado' });
       } else {
         res.status(500).send({ message: 'Erro ao ler os dados do usuário' });
       }
