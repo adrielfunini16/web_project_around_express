@@ -34,4 +34,60 @@ const createUser = (req, res) => {
     });
 };
 
-module.exports = { getUsers, getUserById, createUser };
+const updateProfileUser = (req, res) => {
+  const userId = req.user._id;
+  const { name, about } = req.body;
+  User.findByIdAndUpdate(
+    userId,
+    { name, about },
+    { returnDocument: 'after', runValidators: true },
+  )
+    .orFail()
+    .then((updatedUser) => {
+      res.send(updatedUser);
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Dados inválidos fornecidos' });
+      } else if (err.name === 'DocumentNotFoundError') {
+        res.status(404).send({ message: 'ID do usuário não encontrado' });
+      } else {
+        res
+          .status(500)
+          .send({ message: 'Erro ao atualizar o perfil do usuário' });
+      }
+    });
+};
+
+const updateAvatarUser = (req, res) => {
+  const userId = req.user._id;
+  const { avatar } = req.body;
+  User.findByIdAndUpdate(
+    userId,
+    { avatar },
+    { returnDocument: 'after', runValidators: true },
+  )
+    .orFail()
+    .then((updatedUser) => {
+      res.send(updatedUser);
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Dados inválidos fornecidos' });
+      } else if (err.name === 'DocumentNotFoundError') {
+        res.status(404).send({ message: 'ID do usuário não encontrado' });
+      } else {
+        res
+          .status(500)
+          .send({ message: 'Erro ao atualizar o avatar do usuário' });
+      }
+    });
+};
+
+module.exports = {
+  getUsers,
+  getUserById,
+  createUser,
+  updateProfileUser,
+  updateAvatarUser,
+};
