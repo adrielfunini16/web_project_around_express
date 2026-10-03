@@ -1,42 +1,85 @@
 # Around the U.S. — Express Backend
 
-Backend server for the **Around the U.S.** application, built with **Node.js** and **Express** as part of the TripleTen Full-Stack Web Development program.
+Backend API for the **Around the U.S.** application, built with **Node.js**, **Express**, **MongoDB**, and **Mongoose** as part of the TripleTen Full-Stack Web Development program.
 
-This project focuses on the server-side foundation of the application: organizing API routes, handling HTTP requests and responses, reading and processing JSON data, returning appropriate HTTP status codes, and implementing error handling for unavailable resources and server-side failures.
+The project has evolved from reading local JSON files to storing users and cards in MongoDB. It now includes database models, schema validation, controllers, profile updates, card creation and deletion, and like/unlike operations.
 
 ## Project Overview
 
-The server exposes endpoints for two main resources: **users** and **cards**. The application uses modular Express routers to separate responsibilities and keep the server structure organized and maintainable.
+The API manages two resources: **users** and **cards**. Express routers define the endpoints, controllers handle requests and database operations, and Mongoose models define the document structure and validation rules.
 
-At this stage of the project, data is stored in local JSON files and accessed asynchronously through Node.js file-system APIs. This provides the backend foundation that can later be extended with persistent database storage.
+The current database connection is configured in `app.js`:
+
+```text
+mongodb://localhost:27017/aroundb
+```
 
 ## Features
 
-- Node.js server built with Express
-- Modular routing with `express.Router()`
-- REST-style endpoints for users and cards
-- Dynamic route parameters for retrieving a user by ID
-- Asynchronous JSON file reading with Node.js `fs`
-- File path handling with Node.js `path`
-- JSON parsing and response handling
-- HTTP status codes for successful and unsuccessful requests
-- `404 Not Found` handling for unknown users and unsupported routes
-- `500 Internal Server Error` handling for file-reading failures
+- Persistent data storage in MongoDB through Mongoose
+- Separate routers, controllers, and models for users and cards
+- User creation, user listing, and lookup by ID
+- Profile and avatar updates for the development user
+- Card creation, listing, and deletion
+- Like/unlike operations using `$addToSet` and `$pull`
+- User references through MongoDB `ObjectId` fields
+- Required fields, string-length constraints, and custom URL validation
+- Validation on profile and avatar updates with `runValidators: true`
+- JSON request-body parsing with `express.json()`
+- HTTP responses for successful operations, invalid input, missing resources, and server errors
+- A fallback `404` response for unsupported routes
 - Configurable server port through the `PORT` environment variable
-- Development workflow with Nodemon
-- ESLint configuration based on Airbnb's JavaScript style guide
-- API behavior and error responses tested during development with Postman
+- Nodemon for development and ESLint with Airbnb Base
+- API testing and debugging with Postman
+
+## Data Models
+
+### User
+
+| Field | Type | Validation |
+| --- | --- | --- |
+| `name` | String | Required; 2–30 characters |
+| `about` | String | Required; 2–30 characters |
+| `avatar` | String | Required; custom HTTP/HTTPS URL validation |
+
+### Card
+
+| Field | Type | Validation or default |
+| --- | --- | --- |
+| `name` | String | Required; 2–30 characters |
+| `link` | String | Required; custom HTTP/HTTPS URL validation |
+| `owner` | ObjectId | Required; references the user model |
+| `likes` | Array of ObjectId | References the user model; defaults to an empty array |
+| `createdAt` | Date | Defaults to the creation time |
+
+The shared URL validator is defined in `utils/validation.js`. The `owner` and `likes` fields store user references; the current controllers return these IDs without populating the related user documents.
 
 ## API Endpoints
+
+Base URL for local development: `http://localhost:3000`.
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/users` | Returns all users |
-| `GET` | `/users/:id` | Returns a specific user by ID |
+| `GET` | `/users/:userId` | Returns a user by ID |
+| `POST` | `/users` | Creates a user with `name`, `about`, and `avatar` |
+| `PATCH` | `/users/me` | Updates the development user's `name` and `about` |
+| `PATCH` | `/users/me/avatar` | Updates the development user's `avatar` |
 | `GET` | `/cards` | Returns all cards |
-| Any | unsupported route | Returns a `404` response |
+| `POST` | `/cards` | Creates a card with `name` and `link`; sets `owner` from `req.user._id` |
+| `DELETE` | `/cards/:cardId` | Deletes a card by ID |
+| `PUT` | `/cards/:cardId/likes` | Adds the development user's ID to the likes array without duplicates |
+| `DELETE` | `/cards/:cardId/likes` | Removes the development user's ID from the likes array |
 
-### Example error response
+### HTTP Responses
+
+- `200 OK`: successful reads, updates, card deletion, and like/unlike operations
+- `201 Created`: successful user or card creation
+- `400 Bad Request`: validation failures and invalid IDs handled by the relevant controllers
+- `404 Not Found`: missing documents handled with `orFail()`, or unsupported routes
+- `500 Internal Server Error`: unexpected errors handled by the controllers
+
+Errors are returned as JSON messages. For example:
 
 ```json
 {
@@ -46,48 +89,37 @@ At this stage of the project, data is stored in local JSON files and accessed as
 
 ## Technologies
 
-- **JavaScript (Node.js)**
+- **JavaScript**
+- **Node.js**
 - **Express.js**
-- **Node.js File System (`fs`)**
-- **Node.js Path (`path`)**
-- **JSON**
-- **HTTP / REST concepts**
-- **Postman** for API testing and debugging
-- **Nodemon** for development
-- **ESLint + Airbnb Base** for code quality
-- **Git & GitHub** for version control
+- **MongoDB**
+- **Mongoose**
+- **HTTP / REST concepts and JSON**
+- **Postman**
+- **Nodemon**
+- **ESLint + Airbnb Base**
+- **Git & GitHub**
 
 ## Project Structure
 
-```text
-web_project_around_express/
-├── data/
-│   ├── cards.json
-│   └── users.json
-├── routes/
-│   ├── cards.js
-│   └── users.js
-├── app.js
-├── package.json
-├── package-lock.json
-├── .editorconfig
-├── .eslintrc
-├── .gitignore
-└── README.md
-```
-
-The routing logic is separated into dedicated modules under `routes/`, while `app.js` is responsible for initializing Express, mounting the routers, handling unsupported routes, and starting the server.
+- `app.js`: Express setup, MongoDB connection, JSON middleware, development-user middleware, mounted routers, fallback route, and server startup
+- `routes/users.js` and `routes/cards.js`: endpoint definitions
+- `controllers/users.js` and `controllers/cards.js`: request handlers, database operations, and error responses
+- `models/user.js` and `models/card.js`: Mongoose schemas and models
+- `utils/validation.js`: shared URL-validation helper
+- `package.json` and `package-lock.json`: dependencies and npm scripts
+- `.editorconfig`, `.eslintrc`, and `.gitignore`: development configuration
+- `README.md`: project documentation
 
 ## Running the Project Locally
 
 ### Prerequisites
 
-- Node.js
-- npm
+- Node.js and npm
+- MongoDB installed and running locally on port `27017`
+- Postman or another HTTP client to exercise the API
 
 ### Installation
-
-Clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/adrielfunini16/web_project_around_express.git
@@ -95,46 +127,85 @@ cd web_project_around_express
 npm install
 ```
 
-Start the server:
+Ensure MongoDB is running, then start the server:
 
 ```bash
-npm start
+npm run start
 ```
 
-The server uses port `3000` by default and can also receive a custom `PORT` environment variable.
-
-For development with automatic server restart:
+For development with automatic restart:
 
 ```bash
 npm run dev
 ```
 
+To run the linter:
+
+```bash
+npm run lint
+```
+
+The server listens on port `3000` by default. An alternative port can be supplied through `PORT`. The MongoDB connection string is currently fixed in `app.js`; this version does not read a database URI from an environment variable.
+
+### Development User Setup
+
+This stage uses middleware in `app.js` to assign a fixed `req.user._id` to every request. It is a development placeholder, not authentication.
+
+To test profile updates and use a real user as the owner of cards and likes:
+
+1. Create a user with `POST /users`.
+2. Copy the returned MongoDB `_id`.
+3. Replace the placeholder `_id` in the development-user middleware in your local `app.js` with that value.
+4. Restart the server, or let Nodemon restart it.
+
+Example request body for creating a user:
+
+```json
+{
+  "name": "Adriel",
+  "about": "Full Stack Developer",
+  "avatar": "https://example.com/avatar.jpg"
+}
+```
+
+Example request body for creating a card:
+
+```json
+{
+  "name": "Mountain view",
+  "link": "https://example.com/mountain.jpg"
+}
+```
+
+Send JSON request bodies with the `Content-Type: application/json` header.
+
 ## What I Practiced
 
-This project strengthened my understanding of backend development and the request-response lifecycle in Node.js and Express. In particular, I practiced:
-
-- Structuring backend code with modular routers
-- Mapping HTTP requests to resource-specific handlers
-- Working with route parameters through `req.params`
-- Reading server-side data asynchronously
-- Parsing and returning JSON data
-- Choosing HTTP status codes for different outcomes
-- Handling missing resources and server errors
-- Testing endpoints and debugging API behavior with Postman
-- Managing dependencies and development scripts with npm
-- Using environment variables for server configuration
+- Connecting an Express application to MongoDB
+- Designing Mongoose schemas and models
+- Creating, reading, updating, and deleting database documents
+- Representing relationships with `ObjectId` references
+- Validating fields and handling Mongoose errors
+- Separating routing, controller logic, and database models
+- Managing asynchronous database operations with Promises
+- Using `orFail()` for missing documents
+- Updating arrays with `$addToSet` and `$pull`
+- Testing API behavior with Postman
+- Documenting endpoints and local setup
 
 ## Current Scope
 
-This repository represents the **Express backend stage** of the Around the U.S. project. It currently uses JSON files as its data source and implements read operations for users and cards. Database persistence, authentication, and additional CRUD operations are outside the current scope of this version.
+This repository represents the **MongoDB/Mongoose backend stage** of the Around the U.S. project. Database persistence and the endpoints documented above are implemented.
 
-This distinction is intentional: the README documents what is actually implemented in the repository rather than presenting future functionality as completed work.
+Registration/login, password hashing, JWT authentication, and ownership-based authorization are not implemented in this version. Card deletion currently operates by card ID without checking ownership. Users have `name`, `about`, and `avatar` fields; email and password fields are not part of the current user model.
+
+The npm `test` script is still a placeholder. API behavior has been exercised manually with Postman; an automated test suite is not included.
 
 ## Author
 
 **Adriel Funini dos Santos**
 
-Full-Stack Web Development student focused on JavaScript, React, Node.js, Express, REST APIs, and modern web development.
+Full-Stack Web Development student focused on JavaScript, React, Node.js, Express, MongoDB, Mongoose, REST APIs, and modern web development.
 
 - GitHub: [Adriel Funini](https://github.com/adrielfunini16)
 - LinkedIn: [Adriel Funini](https://www.linkedin.com/in/adriel-funini/)
