@@ -16,21 +16,12 @@ mongodb://localhost:27017/aroundb
 
 ## Features
 
-- Persistent data storage in MongoDB through Mongoose
-- Separate routers, controllers, and models for users and cards
-- User creation, user listing, and lookup by ID
-- Profile and avatar updates for the development user
-- Card creation, listing, and deletion
-- Like/unlike operations using `$addToSet` and `$pull`
-- User references through MongoDB `ObjectId` fields
-- Required fields, string-length constraints, and custom URL validation
-- Validation on profile and avatar updates with `runValidators: true`
-- JSON request-body parsing with `express.json()`
-- HTTP responses for successful operations, invalid input, missing resources, and server errors
-- A fallback `404` response for unsupported routes
-- Configurable server port through the `PORT` environment variable
-- Nodemon for development and ESLint with Airbnb Base
-- API testing and debugging with Postman
+- **Database operations:** MongoDB persistence with Mongoose; user creation, listing, lookup, and profile/avatar updates; card creation, listing, and deletion.
+- **Modular architecture:** separate Express routers, controllers, and models, with user references stored as ObjectIds.
+- **Validation:** required fields, string-length constraints, shared URL validation, and validators enabled on profile/avatar updates.
+- **Likes:** add and remove user references with `$addToSet` and `$pull`, avoiding duplicate likes.
+- **Request and error handling:** JSON body parsing, appropriate HTTP status codes, missing-document handling, and a fallback `404` route.
+- **Development workflow:** configurable server port, Nodemon, ESLint with Airbnb Base, and manual API testing with Postman.
 
 ## Data Models
 
@@ -79,13 +70,31 @@ Base URL for local development: `http://localhost:3000`.
 - `404 Not Found`: missing documents handled with `orFail()`, or unsupported routes
 - `500 Internal Server Error`: unexpected errors handled by the controllers
 
-Errors are returned as JSON messages. For example:
+The current API returns application error messages in Portuguese. This example preserves the actual response; the message means “User ID not found”:
 
 ```json
 {
   "message": "ID do usuário não encontrado"
 }
 ```
+
+### Example Card Creation Response
+
+A successful `POST /cards` returns `201 Created` with the saved card document:
+
+```json
+{
+  "name": "Mountain view",
+  "link": "https://example.com/mountain.jpg",
+  "owner": "507f1f77bcf86cd799439011",
+  "likes": [],
+  "_id": "507f191e810c19729de860ea",
+  "createdAt": "2026-10-03T19:00:00.000Z",
+  "__v": 0
+}
+```
+
+This is an illustrative response based on the current model and controller, not a captured request. IDs and timestamps will vary. The `owner` value comes from the configured development user, `likes` starts empty, and `__v` is Mongoose's version key.
 
 ## Technologies
 
@@ -94,7 +103,6 @@ Errors are returned as JSON messages. For example:
 - **Express.js**
 - **MongoDB**
 - **Mongoose**
-- **HTTP / REST concepts and JSON**
 - **Postman**
 - **Nodemon**
 - **ESLint + Airbnb Base**
@@ -195,11 +203,30 @@ Send JSON request bodies with the `Content-Type: application/json` header.
 
 ## Current Scope
 
-This repository represents the **MongoDB/Mongoose backend stage** of the Around the U.S. project. Database persistence and the endpoints documented above are implemented.
+This repository represents the **Sprint 16 MongoDB/Mongoose backend stage** of the Around the U.S. project. Database persistence and the endpoints documented above are implemented.
 
 Registration/login, password hashing, JWT authentication, and ownership-based authorization are not implemented in this version. Card deletion currently operates by card ID without checking ownership. Users have `name`, `about`, and `avatar` fields; email and password fields are not part of the current user model.
 
 The npm `test` script is still a placeholder. API behavior has been exercised manually with Postman; an automated test suite is not included.
+
+## Planned
+
+The following items are planned for the next stages of the project and are not implemented in this version:
+
+- Add signup/signin endpoints and extend the user model with email and password fields.
+- Hash passwords before storage and verify them during signin.
+- Issue and validate JWTs for authentication.
+- Replace the fixed development user with authentication middleware and add authorization checks.
+- Restrict card deletion to its owner, returning `403 Forbidden` when another user attempts to delete it.
+- Standardize application response messages in English.
+- Connect the React front end to this API and its MongoDB database during the final integration stages of the bootcamp.
+
+## Related Repositories
+
+- [Around the U.S. — React Front End](https://github.com/adrielfunini16/web_project_around_react)
+- [React Live Demo](https://adrielfunini16.github.io/web_project_around_react/)
+
+The React application currently consumes a separate external API and its database. It is **not yet connected to this Express/MongoDB backend**. The front end shows the interface and user flows that will be connected to this API as the project progresses toward full-stack integration.
 
 ## Author
 
