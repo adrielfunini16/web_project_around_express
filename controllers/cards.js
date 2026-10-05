@@ -1,26 +1,22 @@
 const Card = require('../models/card');
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send(cards))
-    .catch(() => res.status(500).send({ message: 'Erro ao buscar os cards' }));
+    .catch((err) => next(err));
 };
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({ name, link, owner })
     .then((newCard) => res.status(201).send(newCard))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Dados inválidos fornecidos' });
-      } else {
-        res.status(500).send({ message: 'Erro ao criar o card' });
-      }
+      next(err);
     });
 };
 
-const deleteCard = (req, res) => {
+const deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   Card.findByIdAndDelete(cardId)
     .orFail()
@@ -28,17 +24,11 @@ const deleteCard = (req, res) => {
       res.send({ message: 'Card deletado com sucesso' });
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'ID do card inválido' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: ' ID do card não encontrado' });
-      } else {
-        res.status(500).send({ message: 'Erro ao deletar o card' });
-      }
+      next(err);
     });
 };
 
-const likeCard = (req, res) => {
+const likeCard = (req, res, next) => {
   const userId = req.user._id;
   const { cardId } = req.params;
   Card.findByIdAndUpdate(
@@ -49,17 +39,11 @@ const likeCard = (req, res) => {
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'ID do card inválido' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'ID do card não encontrado' });
-      } else {
-        res.status(500).send({ message: 'Erro ao curtir o card' });
-      }
+      next(err);
     });
 };
 
-const dislikeCard = (req, res) => {
+const dislikeCard = (req, res, next) => {
   const userId = req.user._id;
   const { cardId } = req.params;
   Card.findByIdAndUpdate(
@@ -70,13 +54,7 @@ const dislikeCard = (req, res) => {
     .orFail()
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'ID do card inválido' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'ID do card não encontrado' });
-      } else {
-        res.status(500).send({ message: 'Erro ao descurtir o card' });
-      }
+      next(err);
     });
 };
 

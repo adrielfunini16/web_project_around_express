@@ -1,40 +1,32 @@
 const User = require('../models/user');
 
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => res.status(500).send({ message: 'Erro ao ler os dados dos usuários' }));
+    .catch((err) => {
+      next(err);
+    });
 };
 
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail()
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'ID do usuário inválido' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'ID do usuário não encontrado' });
-      } else {
-        res.status(500).send({ message: 'Erro ao ler os dados do usuário' });
-      }
+      next(err);
     });
 };
 
-const createUser = (req, res) => {
+const createUser = (req, res, next) => {
   const { name, about, avatar } = req.body;
   User.create({ name, about, avatar })
     .then((newUser) => res.status(201).send(newUser))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Dados inválidos fornecidos' });
-      } else {
-        res.status(500).send({ message: 'Erro ao criar o usuário' });
-      }
+      next(err);
     });
 };
 
-const updateProfileUser = (req, res) => {
+const updateProfileUser = (req, res, next) => {
   const userId = req.user._id;
   const { name, about } = req.body;
   User.findByIdAndUpdate(
@@ -47,19 +39,11 @@ const updateProfileUser = (req, res) => {
       res.send(updatedUser);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Dados inválidos fornecidos' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'ID do usuário não encontrado' });
-      } else {
-        res
-          .status(500)
-          .send({ message: 'Erro ao atualizar o perfil do usuário' });
-      }
+      next(err);
     });
 };
 
-const updateAvatarUser = (req, res) => {
+const updateAvatarUser = (req, res, next) => {
   const userId = req.user._id;
   const { avatar } = req.body;
   User.findByIdAndUpdate(
@@ -72,15 +56,7 @@ const updateAvatarUser = (req, res) => {
       res.send(updatedUser);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Dados inválidos fornecidos' });
-      } else if (err.name === 'DocumentNotFoundError') {
-        res.status(404).send({ message: 'ID do usuário não encontrado' });
-      } else {
-        res
-          .status(500)
-          .send({ message: 'Erro ao atualizar o avatar do usuário' });
-      }
+      next(err);
     });
 };
 
